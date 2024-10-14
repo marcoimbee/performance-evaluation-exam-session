@@ -3,8 +3,7 @@
 
 Define_Module(Prof);
 
-void Prof::initialize()
-{
+void Prof::initialize() {
     cModule *commissione = getParentModule();
     cModule *network = commissione->getParentModule();
 
@@ -15,10 +14,10 @@ void Prof::initialize()
     answerTime = registerSignal("answerTime");
 
 
-    if(distr == false){                 //uniform
+    if(distr == false) {                 //uniform
         min = network->par("min");
         max = network->par("max");
-    }else{                              //lognormal
+    } else {                              //lognormal
         scale = network->par("scale");
         shape = network->par("shape");
     }
@@ -28,24 +27,19 @@ void Prof::initialize()
 
 
 
-void Prof::handleMessage(cMessage *msg)
-{
+void Prof::handleMessage(cMessage *msg) {
     double t;
-    if(distr == false) t = uniform(min, max);
-    else t = lognormal(scale, shape);
+    if(distr == false) 
+        t = uniform(min, max);
+    else 
+        t = lognormal(scale, shape);
 
-    if(examinationMode) //true: Pipeline, false: Parallel
-    {
-        if(msg->isSelfMessage())
-        {
-            //EV << "PROF: stud interrogato, rimando..."<<endl;
-            setStartingTime(simTime().dbl()); // starting time dell'IdleTime
+    if(examinationMode) {         //true: Pipeline, false: Parallel
+        if(msg->isSelfMessage()) {
+            setStartingTime(simTime().dbl());     // IdleTime starting time
             send(msg, "outStudent");
-        }
-        else
-        {
-            //EV << "PROF: Ricevuto stud " <<endl;
-            double idleTimeDiff = simTime().dbl() - getStartingTime();      //starting time from THIS moment
+        } else {
+            double idleTimeDiff = simTime().dbl() - getStartingTime();      // starting time from THIS moment
             setSumIdleTimes(getSumIdleTimes() + idleTimeDiff);
 
             Student *s = check_and_cast<Student *>(msg);
@@ -55,9 +49,7 @@ void Prof::handleMessage(cMessage *msg)
 
             scheduleAt(simTime() + t, msg);
         }
-    }
-    else
-    {
+    } else {
         Student *s = check_and_cast<Student *>(msg);
         int remainingQuestions = s->getNumQuestions();
 
@@ -65,23 +57,17 @@ void Prof::handleMessage(cMessage *msg)
             remainingQuestions--;
             s->setNumQuestions(remainingQuestions);         //setting the parameter
 
-            //EV << "received student. numQuestions = " << s->getNumQuestions() << ", t = " << t << endl;
             s->setExaminationTime(s->getExaminationTime() + t);
             scheduleAt(simTime() + t, s);
-        }
-        else
-        {
+        } else {
             send(s, "outStudent");     //send back the student to the generator
         }
     }
 }
 
-
-
 void Prof::setStartingTime(double startingTime){ this->startingTime = startingTime; }
 
 double Prof::getStartingTime(){ return this->startingTime; }
-
 
 void Prof::setSumIdleTimes(double sumIdleTimes){ this->sumIdleTimes = sumIdleTimes; }
 
